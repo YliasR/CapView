@@ -9,6 +9,10 @@ const isAppPage = (url) => typeof url === 'string' && url.split('#')[0] === INDE
 // Keep video smooth when the window is in the background (e.g. while Discord is focused).
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
 app.commandLine.appendSwitch('disable-background-timer-throttling');
+// Stop Chromium from moving the video onto a hardware overlay plane whenever nothing covers it.
+// On many GPUs (notably NVIDIA hybrid laptops) that switch flashes a green frame when the
+// control bar hides.
+app.commandLine.appendSwitch('disable-direct-composition-video-overlays');
 
 function createWindow() {
   const win = new BrowserWindow({

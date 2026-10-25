@@ -39,10 +39,9 @@ body.idle { cursor: none; }
   align-items: end;
   padding: 10px 14px;
   max-width: calc(100% - 32px);
-  background: rgba(20, 20, 24, 0.85);
+  background: rgba(20, 20, 24, 0.9);
   border: 1px solid #333;
   border-radius: 10px;
-  backdrop-filter: blur(6px);
   transition: opacity 0.15s;
 }
 body.idle #bar { opacity: 0; pointer-events: none; }
