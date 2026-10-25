@@ -1,4 +1,5 @@
-const { app, BrowserWindow, session } = require('electron');
+const { app, BrowserWindow, dialog, session } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const { pathToFileURL } = require('url');
 
@@ -52,6 +53,69 @@ function createWindow() {
   });
 }
 
+function setWindowTitle(title) {
+  for (const win of BrowserWindow.getAllWindows()) win.setTitle(title);
+}
+
+// Packaged builds check GitHub Releases on startup. The dialog is the only
+// prompt: Install downloads and restarts, Not now keeps the current version.
+function setupAutoUpdater() {
+  if (!app.isPackaged) return;
+
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = false;
+  autoUpdater.logger = console;
+
+  let installRequested = false;
+
+  autoUpdater.on('error', (error) => {
+    console.error('Update error:', error);
+    if (!installRequested) return;
+    installRequested = false;
+    setWindowTitle('CapView');
+    dialog.showMessageBox({
+      type: 'error',
+      buttons: ['OK'],
+      title: 'Update failed',
+      message: 'CapView could not install the update.',
+      detail: (error && error.message) || 'Check your connection and try again on the next launch.',
+    });
+  });
+
+  autoUpdater.on('update-available', async (info) => {
+    const version = info && info.version ? info.version : 'a newer version';
+    const parent = BrowserWindow.getAllWindows().find((win) => !win.isDestroyed());
+    const choice = {
+      type: 'info',
+      buttons: ['Install', 'Not now'],
+      defaultId: 0,
+      cancelId: 1,
+      noLink: true,
+      title: 'Update available',
+      message: `CapView ${version} is available.`,
+      detail: `You are using ${app.getVersion()}. Install it now? CapView will download the update and restart when it is ready.`,
+    };
+    const { response } = parent
+      ? await dialog.showMessageBox(parent, choice)
+      : await dialog.showMessageBox(choice);
+    if (response !== 0) return;
+    installRequested = true;
+    setWindowTitle('CapView — downloading update');
+    autoUpdater.downloadUpdate().catch((error) => console.error('Update download failed:', error));
+  });
+
+  autoUpdater.on('download-progress', (progress) => {
+    const percent = Math.round(progress.percent || 0);
+    setWindowTitle(`CapView — downloading update ${percent}%`);
+  });
+
+  autoUpdater.on('update-downloaded', () => {
+    autoUpdater.quitAndInstall(true, true);
+  });
+
+  autoUpdater.checkForUpdates().catch((error) => console.error('Update check failed:', error));
+}
+
 app.whenReady().then(() => {
   // Only grant camera/mic access, and only to the app's own page; deny everything else.
   session.defaultSession.setPermissionRequestHandler((wc, permission, callback, details) => {
@@ -62,6 +126,7 @@ app.whenReady().then(() => {
   });
 
   createWindow();
+  setupAutoUpdater();
 });
 
 app.on('window-all-closed', () => app.quit());

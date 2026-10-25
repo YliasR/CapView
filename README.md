@@ -4,14 +4,31 @@ A minimal capture card viewer. Pick a video device and an audio device, and it s
 
 ## Install
 
+Download the latest `CapView-Setup` executable from the [releases page](https://github.com/YliasR/CapView/releases) and run it.
+
+The setup wizard:
+
+- Shows the MIT license
+- Lets you install for yourself (default, no administrator prompt) or for all users
+- Lets you pick the install folder
+- Adds CapView to the Start menu and the desktop
+- Registers an uninstaller under Windows Settings → Apps
+- Can launch CapView when it finishes
+
+Windows SmartScreen may warn on first launch because the installer is not code-signed. Choose **More info**, then **Run anyway**.
+
+### Build from source
+
 ```bash
 npm install
 npm run dist
 ```
 
-Then run `dist/CapView Setup 1.0.0.exe`. It installs per-user and adds CapView to the Start menu and desktop.
+The installer is written to `dist/CapView-Setup-<version>.exe`.
 
-For development, `npm start` runs it without installing.
+For development, `npm start` runs it without installing. Unpackaged runs do not check for updates.
+
+Pushes and pull requests to `master` (and `main`) build the Windows installer in GitHub Actions and upload it as a workflow artifact. Tagging `vX.Y.Z` publishes that build as a GitHub release, which is what the in-app updater reads.
 
 > If the build fails with an NSIS `could not open file` error, the project path is too long (Windows MAX_PATH). Move the repo to a shorter path.
 
@@ -21,6 +38,7 @@ For development, `npm start` runs it without installing.
 - The control bar and cursor hide after a few seconds of no mouse movement.
 - Double-click the video or press **F11** for fullscreen. **F12** opens devtools.
 - Your selections are remembered between launches.
+- On startup, an installed build checks for a newer GitHub release. A dialog asks **Install** or **Not now**. Install downloads the update (the window title shows progress) and restarts CapView when it is ready. The repository has to be public for that check to reach the release.
 
 ## Sharing in Discord
 
