@@ -5,6 +5,9 @@ const audioSelect = document.getElementById('audioSelect');
 const resSelect = document.getElementById('resSelect');
 const volume = document.getElementById('volume');
 const reloadBtn = document.getElementById('reload');
+const modeEl = document.getElementById('mode');
+const bar = document.getElementById('bar');
+const humToggle = document.getElementById('humFilter');
 
 const STORE_KEY = 'capview-settings';
 const NONE = 'none';
@@ -28,6 +31,7 @@ function saveSettings() {
     audio: audioSelect.value,
     res: resSelect.value,
     volume: volume.value,
+    humFilter: humToggle.checked,
   }));
 }
 
@@ -73,7 +77,9 @@ function pairAudioWithVideo() {
 }
 
 function videoConstraints() {
-  const c = { deviceId: { exact: videoSelect.value } };
+  // resizeMode 'none' makes Chromium pick a mode the card really supports instead of
+  // silently rescaling a lower-res mode up to the requested size.
+  const c = { deviceId: { exact: videoSelect.value }, resizeMode: 'none' };
   if (resSelect.value !== 'auto') {
     const [, w, h, fps] = resSelect.value.match(/(\d+)x(\d+)@(\d+)/);
     c.width = { ideal: Number(w) };
@@ -97,10 +103,23 @@ async function startVideo() {
     video.srcObject = videoStream;
     const s = videoStream.getVideoTracks()[0].getSettings();
     document.title = `CapView - ${s.width}x${s.height} @ ${Math.round(s.frameRate)}fps`;
+    modeEl.textContent = `${s.width}x${s.height} @ ${Math.round(s.frameRate)}fps`;
     setStatus('');
   } catch (err) {
     setStatus(`Video failed: ${err.name} - ${err.message}`);
   }
+}
+
+// Cheap capture cards often pick up mains hum (50 Hz in Europe) and sub-bass rumble from
+// ground loops or noisy USB power. A steep (4th-order Butterworth) high-pass removes the
+// rumble, and notches on the mains harmonics remove the buzz above it.
+const MAINS_HZ = 50;
+function humFilters(ctx) {
+  const highpass = [0.541, 1.307].map((Q) =>
+    new BiquadFilterNode(ctx, { type: 'highpass', frequency: 90, Q }));
+  const notches = [1, 2, 3].map((n) =>
+    new BiquadFilterNode(ctx, { type: 'notch', frequency: MAINS_HZ * n, Q: 3 }));
+  return [...highpass, ...notches];
 }
 
 async function startAudio() {
@@ -129,7 +148,11 @@ async function startAudio() {
     audioCtx = new AudioContext({ latencyHint: 'interactive', sampleRate: 48000 });
     gainNode = audioCtx.createGain();
     gainNode.gain.value = Number(volume.value);
-    audioCtx.createMediaStreamSource(audioStream).connect(gainNode).connect(audioCtx.destination);
+    let node = audioCtx.createMediaStreamSource(audioStream);
+    if (humToggle.checked) {
+      for (const filter of humFilters(audioCtx)) node = node.connect(filter);
+    }
+    node.connect(gainNode).connect(audioCtx.destination);
   } catch (err) {
     setStatus(`Audio failed: ${err.name} - ${err.message}`);
   }
@@ -146,20 +169,34 @@ volume.addEventListener('input', () => {
   if (gainNode) gainNode.gain.value = Number(volume.value);
   saveSettings();
 });
+humToggle.addEventListener('change', () => { saveSettings(); startAudio(); });
 reloadBtn.addEventListener('click', async () => { await listDevices(); restart(); });
 
 // Re-scan when a device is plugged in or removed.
 navigator.mediaDevices.addEventListener('devicechange', listDevices);
 
-// Hide the control bar and cursor after a few seconds without mouse movement.
+// Hide the control bar and cursor shortly after the mouse stops, unless it's over the bar.
+const IDLE_MS = 1000;
 let idleTimer = null;
-function wake() {
+function goIdle() {
+  clearTimeout(idleTimer);
+  document.body.classList.add('idle');
+}
+function overBar(e) {
+  const r = bar.getBoundingClientRect();
+  return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+}
+// Uses the bar's rect rather than :hover, since the hidden bar ignores the pointer.
+function wake(e) {
   document.body.classList.remove('idle');
   clearTimeout(idleTimer);
-  idleTimer = setTimeout(() => document.body.classList.add('idle'), 2500);
+  if (!e || !overBar(e)) idleTimer = setTimeout(goIdle, IDLE_MS);
 }
 document.addEventListener('mousemove', wake);
 document.addEventListener('mousedown', wake);
+// Hide immediately when the cursor leaves the window (e.g. moving over to Discord).
+document.documentElement.addEventListener('mouseleave', goIdle);
+window.addEventListener('blur', () => { if (!document.hasFocus()) goIdle(); });
 
 // Double-click the video to toggle fullscreen.
 video.addEventListener('dblclick', () => {
@@ -176,6 +213,7 @@ video.addEventListener('dblclick', () => {
   else pairAudioWithVideo();
   if (saved.res && has(resSelect, saved.res)) resSelect.value = saved.res;
   if (saved.volume) volume.value = saved.volume;
+  if (typeof saved.humFilter === 'boolean') humToggle.checked = saved.humFilter;
   wake();
   restart();
 })();

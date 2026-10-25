@@ -29,5 +29,6 @@ Go Live / Screen Share → **Applications** → pick the **CapView** window. Dis
 ## Troubleshooting
 
 - **Black screen / "Could not start video source":** another app (OBS, the capture card's own software) is holding the device. Close it, then hit **Restart**.
-- **Wrong resolution or low FPS:** cheap USB cards often only do 1080p at 30fps, or need 720p for 60fps. Try a different preset; the active mode is shown in the window title.
+- **Wrong resolution or low FPS:** cheap USB cards often top out at 1080p30/50, or need 720p for 60fps. Try a different preset; the mode the card really delivers is shown in green in the control bar. On a USB 2 port, 1080p is sent as heavily compressed MJPEG and looks soft; use a USB 3 port if the card supports it.
+- **Low buzzing or humming:** usually a ground loop between the console and the PC (different power outlets) or noisy USB power. The **Hum filter** toggle (on by default) cuts everything below 90 Hz and notches 50/100/150 Hz. To remove it at the source, plug the console and PC into the same power strip, or try with the laptop charger unplugged.
 - **Audio crackles or is delayed:** set the capture card's audio device to 48 kHz in Windows Sound settings → Recording → device Properties → Advanced.
