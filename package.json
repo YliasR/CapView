@@ -1,7 +1,7 @@
 {
   "name": "capview",
   "productName": "CapView",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Minimal capture card viewer for sharing in Discord",
   "author": "mystic",
   "homepage": "https://github.com/YliasR/CapView",
@@ -33,11 +33,19 @@
       "output": "dist"
     },
     "copyright": "Copyright (c) 2026 mystic",
+    "publish": {
+      "provider": "github",
+      "owner": "YliasR",
+      "repo": "CapView",
+      "releaseType": "release"
+    },
     "win": {
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "build/icon.png"
@@ -56,5 +64,8 @@
       "artifactName": "${productName}-Setup-${version}.${ext}",
       "displayLanguageSelector": false
     }
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11"
   }
 }
