@@ -63,6 +63,15 @@ async function listDevices() {
   fillSelect(audioSelect, devices.filter((d) => d.kind === 'audioinput'), { allowNone: true });
 }
 
+// USB capture cards expose video and audio with the same "(vid:pid)" suffix in their labels.
+function pairAudioWithVideo() {
+  const label = videoSelect.selectedOptions[0]?.text || '';
+  const usbId = label.match(/\(([0-9a-f]{4}:[0-9a-f]{4})\)/i)?.[1];
+  if (!usbId) return;
+  const match = [...audioSelect.options].find((o) => o.text.toLowerCase().includes(usbId.toLowerCase()));
+  if (match) audioSelect.value = match.value;
+}
+
 function videoConstraints() {
   const c = { deviceId: { exact: videoSelect.value } };
   if (resSelect.value !== 'auto') {
@@ -164,6 +173,7 @@ video.addEventListener('dblclick', () => {
   const has = (select, value) => [...select.options].some((o) => o.value === value);
   if (saved.video && has(videoSelect, saved.video)) videoSelect.value = saved.video;
   if (saved.audio && has(audioSelect, saved.audio)) audioSelect.value = saved.audio;
+  else pairAudioWithVideo();
   if (saved.res && has(resSelect, saved.res)) resSelect.value = saved.res;
   if (saved.volume) volume.value = saved.volume;
   wake();
