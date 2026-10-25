@@ -7,11 +7,63 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <svg id="pictureFilters" aria-hidden="true">
+    <filter id="grade" color-interpolation-filters="linearRGB" x="0" y="0" width="100%" height="100%">
+      <feComponentTransfer>
+        <feFuncR id="gammaR" type="gamma" amplitude="1" exponent="1" offset="0"/>
+        <feFuncG id="gammaG" type="gamma" amplitude="1" exponent="1" offset="0"/>
+        <feFuncB id="gammaB" type="gamma" amplitude="1" exponent="1" offset="0"/>
+      </feComponentTransfer>
+      <feColorMatrix id="tempMatrix" type="matrix"
+        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0"/>
+    </filter>
+    <filter id="sharpen" color-interpolation-filters="linearRGB"
+        primitiveUnits="userSpaceOnUse" x="-1%" y="-1%" width="102%" height="102%">
+      <feConvolveMatrix id="sharpenKernel" order="3" preserveAlpha="true" edgeMode="duplicate"
+        kernelMatrix="0 0 0 0 1 0 0 0 0"/>
+    </filter>
+  </svg>
+
   <video id="video" autoplay playsinline muted></video>
 
   <div id="status">Pick a video source to start.</div>
 
   <div id="bar">
+    <div id="picture" hidden role="group" aria-labelledby="pictureLabel">
+      <div class="picture-head">
+        <span id="pictureLabel">Picture</span>
+        <button id="pictureReset" type="button" title="Put every picture setting back to 0">Reset</button>
+      </div>
+      <label class="bipolar">Brightness
+        <span class="range"><input id="brightness" type="range" min="-100" max="100" value="0" title="Overall lightness. 0 leaves the image unchanged."><span class="detent" aria-hidden="true"></span></span>
+        <output>0</output>
+      </label>
+      <label class="bipolar">Contrast
+        <span class="range"><input id="contrast" type="range" min="-100" max="100" value="0" title="Gap between dark and light. 0 leaves the image unchanged."><span class="detent" aria-hidden="true"></span></span>
+        <output>0</output>
+      </label>
+      <label>Sharpness
+        <input id="sharpness" type="range" min="0" max="100" value="0" title="Edge enhancement. 0 leaves the image untouched.">
+        <output>0</output>
+      </label>
+      <label class="bipolar">Saturation
+        <span class="range"><input id="saturation" type="range" min="-100" max="100" value="0" title="Color intensity. -100 is grayscale, 0 is unchanged."><span class="detent" aria-hidden="true"></span></span>
+        <output>0</output>
+      </label>
+      <label class="bipolar">Hue
+        <span class="range"><input id="hue" type="range" min="-180" max="180" value="0" title="Hue shift in degrees. 0 leaves colors where they are."><span class="detent" aria-hidden="true"></span></span>
+        <output>0</output>
+      </label>
+      <label class="bipolar">Gamma
+        <span class="range"><input id="gamma" type="range" min="-100" max="100" value="0" title="Midtones. Negative darkens them, positive brightens them."><span class="detent" aria-hidden="true"></span></span>
+        <output>0</output>
+      </label>
+      <label class="bipolar">Temperature
+        <span class="range"><input id="temperature" type="range" min="-100" max="100" value="0" title="Negative is warmer, positive is cooler."><span class="detent" aria-hidden="true"></span></span>
+        <output>0</output>
+      </label>
+    </div>
+    <div id="controls">
     <label>Video
       <select id="videoSelect"></select>
     </label>
@@ -33,8 +85,10 @@
     <label class="check" title="Removes 50 Hz mains hum and low rumble">
       <input id="humFilter" type="checkbox" checked> Hum filter
     </label>
-    <button id="reload" title="Restart capture">Restart</button>
+    <button id="pictureToggle" type="button" aria-expanded="false" aria-controls="picture" title="Brightness, contrast, color, and sharpness">Picture</button>
+    <button id="reload" type="button" title="Restart capture">Restart</button>
     <span id="mode" title="Mode the capture card is actually delivering"></span>
+    </div>
   </div>
 
   <script src="renderer.js"></script>

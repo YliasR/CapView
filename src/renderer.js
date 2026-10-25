@@ -8,9 +8,24 @@ const reloadBtn = document.getElementById('reload');
 const modeEl = document.getElementById('mode');
 const bar = document.getElementById('bar');
 const humToggle = document.getElementById('humFilter');
+const picturePanel = document.getElementById('picture');
+const pictureToggle = document.getElementById('pictureToggle');
+const pictureReset = document.getElementById('pictureReset');
 
 const STORE_KEY = 'capview-settings';
 const NONE = 'none';
+
+// Centered on 0, which always means "the capture, untouched".
+// Sharpness starts at the left because 0 is off, not a midpoint.
+const PICTURE = {
+  brightness: { min: -100, max: 100, def: 0 },
+  contrast: { min: -100, max: 100, def: 0 },
+  sharpness: { min: 0, max: 100, def: 0 },
+  saturation: { min: -100, max: 100, def: 0 },
+  hue: { min: -180, max: 180, def: 0 },
+  gamma: { min: -100, max: 100, def: 0 },
+  temperature: { min: -100, max: 100, def: 0 },
+};
 
 let videoStream = null;
 let audioStream = null;
@@ -25,6 +40,12 @@ function loadSettings() {
   }
 }
 
+function pictureValues() {
+  const values = {};
+  for (const key of Object.keys(PICTURE)) values[key] = Number(document.getElementById(key).value);
+  return values;
+}
+
 function saveSettings() {
   localStorage.setItem(STORE_KEY, JSON.stringify({
     video: videoSelect.value,
@@ -32,7 +53,57 @@ function saveSettings() {
     res: resSelect.value,
     volume: volume.value,
     humFilter: humToggle.checked,
+    picture: pictureValues(),
   }));
+}
+
+// Brightness, contrast, saturation, and hue stay on the browser's own color filters,
+// which are free on a live video. Gamma, temperature, and sharpness need SVG, and each
+// of those filters is left off entirely while it sits at its default so a neutral
+// picture is the original frames with nothing in between.
+function applyPicture() {
+  const v = pictureValues();
+  for (const key of Object.keys(PICTURE)) {
+    document.getElementById(key).closest('label').querySelector('output').textContent = String(v[key]);
+  }
+  const neutral = Object.keys(PICTURE).every((key) => v[key] === PICTURE[key].def);
+  pictureToggle.classList.toggle('adjusted', !neutral);
+
+  const parts = [];
+  if (v.brightness !== 0) parts.push(`brightness(${(1 + v.brightness / 200).toFixed(4)})`);
+  if (v.contrast !== 0) parts.push(`contrast(${(1 + v.contrast / 200).toFixed(4)})`);
+  if (v.saturation !== 0) parts.push(`saturate(${(1 + v.saturation / 100).toFixed(4)})`);
+  if (v.hue !== 0) parts.push(`hue-rotate(${v.hue}deg)`);
+  if (v.gamma !== 0 || v.temperature !== 0) {
+    const exponent = Math.pow(2, -v.gamma / 150).toFixed(4);
+    for (const ch of ['R', 'G', 'B']) document.getElementById('gamma' + ch).setAttribute('exponent', exponent);
+    // Positive is cooler: pull red down, push blue up. Kept in linear light so it
+    // behaves like white balance rather than a tint painted over the picture.
+    const k = (v.temperature / 100) * 0.28;
+    const gain = (n) => Number(n.toFixed(4));
+    document.getElementById('tempMatrix').setAttribute('values', [
+      gain(1 - k), 0, 0, 0, 0,
+      0, 1, 0, 0, 0,
+      0, 0, gain(1 + k), 0, 0,
+      0, 0, 0, 1, 0,
+    ].join(' '));
+    parts.push('url(#grade)');
+  }
+  if (v.sharpness > 0) {
+    const amount = (v.sharpness / 100) * 0.75;
+    const n = (-amount).toFixed(4);
+    const c = (1 + 4 * amount).toFixed(4);
+    document.getElementById('sharpenKernel').setAttribute('kernelMatrix', `0 ${n} 0 ${n} ${c} ${n} 0 ${n} 0`);
+    parts.push('url(#sharpen)');
+  }
+  video.style.filter = parts.join(' ');
+}
+
+function setPictureOpen(open) {
+  picturePanel.hidden = !open;
+  pictureToggle.classList.toggle('on', open);
+  pictureToggle.setAttribute('aria-expanded', String(open));
+  if (open) picturePanel.scrollIntoView({ block: 'nearest' });
 }
 
 function setStatus(text) {
@@ -172,6 +243,29 @@ volume.addEventListener('input', () => {
 humToggle.addEventListener('change', () => { saveSettings(); startAudio(); });
 reloadBtn.addEventListener('click', async () => { await listDevices(); restart(); });
 
+pictureToggle.addEventListener('click', () => setPictureOpen(picturePanel.hidden));
+pictureReset.addEventListener('click', () => {
+  for (const key of Object.keys(PICTURE)) document.getElementById(key).value = String(PICTURE[key].def);
+  applyPicture();
+  saveSettings();
+});
+for (const key of Object.keys(PICTURE)) {
+  const input = document.getElementById(key);
+  const output = input.closest('label').querySelector('output');
+  input.addEventListener('input', () => { applyPicture(); saveSettings(); });
+  const resetOne = () => {
+    input.value = String(PICTURE[key].def);
+    applyPicture();
+    saveSettings();
+  };
+  input.addEventListener('dblclick', resetOne);
+  output.addEventListener('click', resetOne);
+  output.title = 'Reset this setting';
+}
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !picturePanel.hidden) setPictureOpen(false);
+});
+
 // Re-scan when a device is plugged in or removed.
 navigator.mediaDevices.addEventListener('devicechange', listDevices);
 
@@ -214,6 +308,16 @@ video.addEventListener('dblclick', () => {
   if (saved.res && has(resSelect, saved.res)) resSelect.value = saved.res;
   if (saved.volume) volume.value = saved.volume;
   if (typeof saved.humFilter === 'boolean') humToggle.checked = saved.humFilter;
+  if (saved.picture) {
+    for (const key of Object.keys(PICTURE)) {
+      const n = saved.picture[key];
+      const spec = PICTURE[key];
+      if (typeof n === 'number' && n >= spec.min && n <= spec.max) {
+        document.getElementById(key).value = String(n);
+      }
+    }
+  }
+  applyPicture();
   wake();
   restart();
 })();
