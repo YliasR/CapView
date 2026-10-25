@@ -1,0 +1,16 @@
+{
+  "name": "capview",
+  "version": "1.0.0",
+  "description": "Minimal capture card viewer for sharing in Discord",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.2.0"
+  },
+  "allowScripts": {
+    "electron@33.4.11": true
+  }
+}
