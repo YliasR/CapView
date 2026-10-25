@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  windows-installer:
+    name: Windows installer
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build installer
+        run: npm run dist
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Write checksum
+        shell: pwsh
+        run: |
+          $file = Get-ChildItem dist -Filter "*-Setup-*.exe" | Select-Object -First 1
+          if (-not $file) { throw "No setup executable was produced" }
+          $hash = (Get-FileHash $file.FullName -Algorithm SHA256).Hash.ToLower()
+          "$hash  $($file.Name)" | Set-Content -Encoding ascii dist/SHA256SUMS.txt
+          Get-Content dist/SHA256SUMS.txt
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: CapView ${{ github.ref_name }}
+          body: |
+            Minimal capture card viewer for sharing a window in Discord.
+
+            ## Install
+
+            Download the `CapView-Setup` executable attached to this release and run it.
+
+            The setup wizard:
+
+            - Shows the MIT license
+            - Lets you install just for yourself (the default, no administrator prompt) or for all users
+            - Lets you pick the install folder
+            - Adds CapView to the Start menu and the desktop
+            - Registers an uninstaller under Windows Settings → Apps
+            - Can launch CapView when it finishes
+
+            Windows SmartScreen may warn on first launch because the installer is not code-signed. Choose **More info**, then **Run anyway**.
+
+            The SHA256 checksum is in `SHA256SUMS.txt`.
+          files: |
+            dist/*-Setup-*.exe
+            dist/SHA256SUMS.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

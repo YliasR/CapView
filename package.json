@@ -4,10 +4,15 @@
   "version": "1.0.0",
   "description": "Minimal capture card viewer for sharing in Discord",
   "author": "mystic",
+  "homepage": "https://github.com/YliasR/CapView",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YliasR/CapView.git"
+  },
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win"
+    "dist": "electron-builder --win --publish never"
   },
   "license": "MIT",
   "devDependencies": {
@@ -27,16 +32,29 @@
       "buildResources": "build",
       "output": "dist"
     },
+    "copyright": "Copyright (c) 2026 mystic",
     "win": {
-      "target": "nsis",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
       "icon": "build/icon.png"
     },
     "nsis": {
-      "oneClick": true,
+      "oneClick": false,
       "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
       "createStartMenuShortcut": true,
       "createDesktopShortcut": true,
-      "shortcutName": "CapView"
+      "runAfterFinish": true,
+      "shortcutName": "CapView",
+      "uninstallDisplayName": "CapView",
+      "license": "LICENSE",
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "displayLanguageSelector": false
     }
   }
 }

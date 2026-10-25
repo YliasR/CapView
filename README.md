@@ -4,12 +4,27 @@ A minimal capture card viewer. Pick a video device and an audio device, and it s
 
 ## Install
 
+Download `CapView-Setup-1.0.0.exe` from the [releases page](https://github.com/YliasR/CapView/releases) and run it.
+
+The setup wizard:
+
+- Shows the MIT license
+- Lets you install for yourself (default, no administrator prompt) or for all users
+- Lets you pick the install folder
+- Adds CapView to the Start menu and the desktop
+- Registers an uninstaller under Windows Settings → Apps
+- Can launch CapView when it finishes
+
+Windows SmartScreen may warn on first launch because the installer is not code-signed. Choose **More info**, then **Run anyway**.
+
+### Build from source
+
 ```bash
 npm install
 npm run dist
 ```
 
-Then run `dist/CapView Setup 1.0.0.exe`. It installs per-user and adds CapView to the Start menu and desktop.
+The installer is written to `dist/CapView-Setup-1.0.0.exe`.
 
 For development, `npm start` runs it without installing.
 
