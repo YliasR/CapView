@@ -2,11 +2,11 @@
 
 A minimal capture card viewer for Windows. Pick a video device and an audio device, and it shows the feed in a plain window with the audio played through your default output. Built to be shared as a window in Discord.
 
-The current release is **1.2.0**. License: [MIT](LICENSE).
+The current release is **1.2.1**. License: [MIT](LICENSE).
 
 ## Install
 
-Download `CapView-Setup-1.2.0.exe` from the [releases page](https://github.com/YliasR/CapView/releases) and run it. The installer is 64-bit Windows only.
+Download `CapView-Setup-1.2.1.exe` from the [releases page](https://github.com/YliasR/CapView/releases) and run it. The installer is 64-bit Windows only.
 
 The setup wizard:
 
@@ -62,7 +62,7 @@ The Windows installer is built with:
 npm run dist
 ```
 
-That writes `dist/CapView-Setup-1.2.0.exe` and does not publish it. On Windows, if NSIS fails with `could not open file`, the project path is longer than `MAX_PATH`. Move the repo to a shorter path.
+That writes `dist/CapView-Setup-1.2.1.exe` and does not publish it. On Windows, if NSIS fails with `could not open file`, the project path is longer than `MAX_PATH`. Move the repo to a shorter path.
 
 Pushes and pull requests to `master` (the default branch) build that installer on GitHub Actions and upload it as a workflow artifact. The workflow also runs for `main` if that branch exists. Tagging `vX.Y.Z` publishes the installer, `latest.yml`, the blockmap, and `SHA256SUMS.txt` as a GitHub release. The in-app updater reads that release.
 
