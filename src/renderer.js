@@ -31,6 +31,9 @@ let videoStream = null;
 let audioStream = null;
 let audioCtx = null;
 let gainNode = null;
+let humNode = null;
+// Frame rate the card is delivering. The hum canceller locks onto it.
+let frameRate = 60;
 
 function loadSettings() {
   try {
@@ -175,24 +178,32 @@ async function startVideo() {
     const s = videoStream.getVideoTracks()[0].getSettings();
     document.title = `CapView - ${s.width}x${s.height} @ ${Math.round(s.frameRate)}fps`;
     modeEl.textContent = `${s.width}x${s.height} @ ${Math.round(s.frameRate)}fps`;
+    if (s.frameRate > 0) {
+      frameRate = s.frameRate;
+      setHumFundamental();
+    }
     setStatus('');
   } catch (err) {
     setStatus(`Video failed: ${err.name} - ${err.message}`);
   }
 }
 
-// Cheap capture cards often pick up mains hum (50 Hz in Europe) and sub-bass rumble from
-// ground loops or noisy USB power. A steep (4th-order Butterworth) high-pass removes the
-// rumble. Narrow notches on each harmonic through 1 kHz remove the buzz without scooping bass.
-const MAINS_HZ = 50;
-const HUM_HARMONICS = 20;
-const NOTCH_Q = 25;
-function humFilters(ctx) {
+// USB capture cards buzz at the video frame rate while they stream: a 30 or 60 Hz tone plus
+// its harmonics, not mains hum. hum-worklet.js tracks and subtracts that comb. A steep
+// (4th-order Butterworth) high-pass below it removes the card's sub-bass rumble.
+async function humFilters(ctx) {
+  await ctx.audioWorklet.addModule('hum-worklet.js');
   const highpass = [0.541, 1.307].map((Q) =>
-    new BiquadFilterNode(ctx, { type: 'highpass', frequency: 90, Q }));
-  const notches = Array.from({ length: HUM_HARMONICS }, (_, i) =>
-    new BiquadFilterNode(ctx, { type: 'notch', frequency: MAINS_HZ * (i + 1), Q: NOTCH_Q }));
-  return [...highpass, ...notches];
+    new BiquadFilterNode(ctx, { type: 'highpass', frequency: 40, Q }));
+  humNode = new AudioWorkletNode(ctx, 'hum-canceller', {
+    outputChannelCount: [2],
+    processorOptions: { fundamental: frameRate },
+  });
+  return [...highpass, humNode];
+}
+
+function setHumFundamental() {
+  if (humNode && frameRate) humNode.port.postMessage({ fundamental: frameRate });
 }
 
 // A bare false is only a preference, so Chromium may still run auto-gain. exact forces it off.
@@ -229,6 +240,7 @@ async function openAudioStream() {
 async function startAudio() {
   stopStream(audioStream);
   audioStream = null;
+  humNode = null;
   if (audioCtx) {
     await audioCtx.close();
     audioCtx = null;
@@ -242,7 +254,7 @@ async function startAudio() {
     gainNode.gain.value = Number(volume.value);
     let node = audioCtx.createMediaStreamSource(audioStream);
     if (humToggle.checked) {
-      for (const filter of humFilters(audioCtx)) node = node.connect(filter);
+      for (const filter of await humFilters(audioCtx)) node = node.connect(filter);
     }
     node.connect(gainNode).connect(audioCtx.destination);
   } catch (err) {
