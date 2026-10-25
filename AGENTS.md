@@ -15,6 +15,10 @@ Chromium flags in `main.js` keep the video composited (no hardware overlay). Pic
 - `README.md` — install and troubleshooting for humans.
 - `node_modules/`, `dist/` — generated, gitignored.
 
+## Releases
+
+Bump `version` in `package.json`, `package-lock.json`, and the README first. A release is the matching git tag `vX.Y.Z`, pushed to origin. CI publishes the GitHub release from that tag. A commit on master alone does not.
+
 ## While editing
 
 - UI copy stays plain. No extra chrome.

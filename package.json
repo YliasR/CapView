@@ -1,7 +1,7 @@
 {
   "name": "capview",
   "productName": "CapView",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Minimal capture card viewer for sharing in Discord",
   "author": "mystic",
   "homepage": "https://github.com/YliasR/CapView",

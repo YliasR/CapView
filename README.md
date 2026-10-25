@@ -2,11 +2,11 @@
 
 A minimal capture card viewer for Windows. Pick a video device and an audio device, and it shows the feed in a plain window with the audio played through your default output. Built to be shared as a window in Discord.
 
-The current release is **1.0.1**. License: [MIT](LICENSE).
+The current release is **1.1.0**. License: [MIT](LICENSE).
 
 ## Install
 
-Download `CapView-Setup-1.0.1.exe` from the [releases page](https://github.com/YliasR/CapView/releases) and run it. The installer is 64-bit Windows only.
+Download `CapView-Setup-1.1.0.exe` from the [releases page](https://github.com/YliasR/CapView/releases) and run it. The installer is 64-bit Windows only.
 
 The setup wizard:
 
@@ -19,7 +19,7 @@ The setup wizard:
 
 Windows SmartScreen may warn on first launch because the installer is not code-signed. Choose **More info**, then **Run anyway**.
 
-`v1.0.0` is the previous release. It does not check for updates. Install 1.0.1 once to get that.
+`v1.0.0` does not check for updates. Install 1.0.1 or later once to get that.
 
 ## Updates
 
@@ -37,10 +37,11 @@ CapView 1.0.1 and later check GitHub Releases on startup.
 - Pick the capture card under **Video**, its audio under **Audio** (or `None`). On first launch, if no audio device was saved, the audio device with the same USB ID as the video device is picked automatically.
 - **Resolution** starts at 1080p60. Presets are 1080p60, 1080p30, 720p60, 720p30, and Auto. The green readout in the control bar is the mode the card is actually delivering.
 - **Volume** and **Hum filter** (on by default) apply to the capture-card audio.
+- **Picture** adjusts brightness, contrast, sharpness, saturation, hue, gamma, and temperature. 0 leaves the image unchanged. Click a number to reset that slider.
 - **Restart** releases the devices and opens them again.
 - The control bar and cursor hide after 1 second without mouse movement. They also hide as soon as the pointer leaves the window, or the window loses focus. Moving the mouse brings them back.
 - Double-click the video or press **F11** for fullscreen. **F12** opens devtools.
-- Video, audio, resolution, volume, and the hum filter are remembered between launches.
+- Video, audio, resolution, volume, the hum filter, and picture settings are remembered between launches.
 
 ## Sharing in Discord
 
@@ -61,7 +62,7 @@ The Windows installer is built with:
 npm run dist
 ```
 
-That writes `dist/CapView-Setup-1.0.1.exe` and does not publish it. On Windows, if NSIS fails with `could not open file`, the project path is longer than `MAX_PATH`. Move the repo to a shorter path.
+That writes `dist/CapView-Setup-1.1.0.exe` and does not publish it. On Windows, if NSIS fails with `could not open file`, the project path is longer than `MAX_PATH`. Move the repo to a shorter path.
 
 Pushes and pull requests to `master` (the default branch) build that installer on GitHub Actions and upload it as a workflow artifact. The workflow also runs for `main` if that branch exists. Tagging `vX.Y.Z` publishes the installer, `latest.yml`, the blockmap, and `SHA256SUMS.txt` as a GitHub release. The in-app updater reads that release.
 
