@@ -183,14 +183,47 @@ async function startVideo() {
 
 // Cheap capture cards often pick up mains hum (50 Hz in Europe) and sub-bass rumble from
 // ground loops or noisy USB power. A steep (4th-order Butterworth) high-pass removes the
-// rumble, and notches on the mains harmonics remove the buzz above it.
+// rumble. Narrow notches on each harmonic through 1 kHz remove the buzz without scooping bass.
 const MAINS_HZ = 50;
+const HUM_HARMONICS = 20;
+const NOTCH_Q = 25;
 function humFilters(ctx) {
   const highpass = [0.541, 1.307].map((Q) =>
     new BiquadFilterNode(ctx, { type: 'highpass', frequency: 90, Q }));
-  const notches = [1, 2, 3].map((n) =>
-    new BiquadFilterNode(ctx, { type: 'notch', frequency: MAINS_HZ * n, Q: 3 }));
+  const notches = Array.from({ length: HUM_HARMONICS }, (_, i) =>
+    new BiquadFilterNode(ctx, { type: 'notch', frequency: MAINS_HZ * (i + 1), Q: NOTCH_Q }));
   return [...highpass, ...notches];
+}
+
+// A bare false is only a preference, so Chromium may still run auto-gain. exact forces it off.
+// voiceIsolation stays a plain false: exact on an unsupported constraint can reject the capture.
+function audioConstraints(exactProcessing) {
+  const off = () => (exactProcessing ? { exact: false } : false);
+  return {
+    deviceId: { exact: audioSelect.value },
+    echoCancellation: off(),
+    noiseSuppression: off(),
+    autoGainControl: off(),
+    voiceIsolation: false,
+    channelCount: { ideal: 2 },
+    sampleRate: { ideal: 48000 },
+    latency: { ideal: 0 },
+  };
+}
+
+async function openAudioStream() {
+  try {
+    return await navigator.mediaDevices.getUserMedia({
+      video: false,
+      audio: audioConstraints(true),
+    });
+  } catch (err) {
+    if (err.name !== 'OverconstrainedError') throw err;
+    return navigator.mediaDevices.getUserMedia({
+      video: false,
+      audio: audioConstraints(false),
+    });
+  }
 }
 
 async function startAudio() {
@@ -203,19 +236,7 @@ async function startAudio() {
   if (!audioSelect.value || audioSelect.value === NONE) return;
 
   try {
-    // Disable all voice processing so game audio passes through untouched.
-    audioStream = await navigator.mediaDevices.getUserMedia({
-      video: false,
-      audio: {
-        deviceId: { exact: audioSelect.value },
-        echoCancellation: false,
-        noiseSuppression: false,
-        autoGainControl: false,
-        channelCount: { ideal: 2 },
-        sampleRate: { ideal: 48000 },
-        latency: { ideal: 0 },
-      },
-    });
+    audioStream = await openAudioStream();
     audioCtx = new AudioContext({ latencyHint: 'interactive', sampleRate: 48000 });
     gainNode = audioCtx.createGain();
     gainNode.gain.value = Number(volume.value);

@@ -2,11 +2,11 @@
 
 A minimal capture card viewer for Windows. Pick a video device and an audio device, and it shows the feed in a plain window with the audio played through your default output. Built to be shared as a window in Discord.
 
-The current release is **1.1.0**. License: [MIT](LICENSE).
+The current release is **1.2.0**. License: [MIT](LICENSE).
 
 ## Install
 
-Download `CapView-Setup-1.1.0.exe` from the [releases page](https://github.com/YliasR/CapView/releases) and run it. The installer is 64-bit Windows only.
+Download `CapView-Setup-1.2.0.exe` from the [releases page](https://github.com/YliasR/CapView/releases) and run it. The installer is 64-bit Windows only.
 
 The setup wizard:
 
@@ -62,7 +62,7 @@ The Windows installer is built with:
 npm run dist
 ```
 
-That writes `dist/CapView-Setup-1.1.0.exe` and does not publish it. On Windows, if NSIS fails with `could not open file`, the project path is longer than `MAX_PATH`. Move the repo to a shorter path.
+That writes `dist/CapView-Setup-1.2.0.exe` and does not publish it. On Windows, if NSIS fails with `could not open file`, the project path is longer than `MAX_PATH`. Move the repo to a shorter path.
 
 Pushes and pull requests to `master` (the default branch) build that installer on GitHub Actions and upload it as a workflow artifact. The workflow also runs for `main` if that branch exists. Tagging `vX.Y.Z` publishes the installer, `latest.yml`, the blockmap, and `SHA256SUMS.txt` as a GitHub release. The in-app updater reads that release.
 
@@ -70,5 +70,5 @@ Pushes and pull requests to `master` (the default branch) build that installer o
 
 - **Black screen / `Video failed: NotReadableError - Could not start video source`:** another app (OBS, the capture card's own software) is holding the device. Close it, then hit **Restart**.
 - **Wrong resolution or low FPS:** cheap USB cards often top out at 1080p30/50, or need 720p for 60fps. Try a different preset. The mode the card really delivers is shown in green in the control bar. On a USB 2 port, 1080p is sent as heavily compressed MJPEG and looks soft; use a USB 3 port if the card supports it.
-- **Low buzzing or humming:** usually a ground loop between the console and the PC (different power outlets) or noisy USB power. The **Hum filter** toggle (on by default) cuts everything below 90 Hz and notches 50/100/150 Hz. To remove it at the source, plug the console and PC into the same power strip, or try with the laptop charger unplugged.
+- **Low buzzing or humming:** usually a ground loop between the console and the PC (different power outlets) or noisy USB power. The **Hum filter** toggle (on by default) cuts everything below 90 Hz and places a narrow notch (Q 25) on every 50 Hz harmonic from 50 Hz through 1000 Hz. To remove it at the source, plug the console and PC into the same power strip, or try with the laptop charger unplugged.
 - **Audio crackles or is delayed:** set the capture card's audio device to 48 kHz in Windows Sound settings → Recording → device Properties → Advanced.
